@@ -18,7 +18,7 @@ This system automatically processes PRs differently based on who created them
 
 ### 🤖 Renovate Bot PRs
 
-When Renovate opens a PR for dependency updates:
+When Renovate opens a PR for dependency updates
 
 1. **Validation**: Confirms PR author is `renovate[bot]`
 2. **POM-only check**: Ensures only `pom.xml` files are changed
