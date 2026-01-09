@@ -1,10 +1,18 @@
 name: PR Automation
 
 on:
+  push:
+    branches:
+      - main
+
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
       - main
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   build:
@@ -28,9 +36,23 @@ jobs:
       - name: Package application
         run: ./mvnw package -DskipTests
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-jar
-          path: target/*.jar
-          retention-days: 7
+  # copilot-review:
+  #   name: Copilot Code Review
+  #   runs-on: ubuntu-latest
+  #   needs: build
+    # if: success()
+
+  #   steps:
+
+  #     - name: Request Copilot Review
+  #       uses: actions/github-script@v7
+  #       with:
+  #         script: |
+  #           // Request Copilot as a reviewer
+  #           await github.rest.pulls.requestReviewers({
+  #             owner: context.repo.owner,
+  #             repo: context.repo.repo,
+  #             pull_number: context.issue.number,
+  #             reviewers: ['copilot[bot]']
+  #           });
+  #           console.log('✅ Copilot review requested');
