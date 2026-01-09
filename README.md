@@ -7,7 +7,7 @@ An automated GitHub Actions workflow that runs build, security, and code quality
 
 ## Overview
 
-This system automatically processes PRs differently based on who created them:
+This system automatically processes PRs differently based on who created them
 
 | PR Type | Author | Actions |
 |---------|--------|---------|
