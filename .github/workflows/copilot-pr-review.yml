@@ -48,13 +48,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Load Rules Configuration
-        id: config
-        run: |
+    #  - name: Load Rules Configuration
+      #  id: config
+     #   run: |
           # Load the rules configuration from JSON
-          CONFIG=$(cat .github/rules-config.json)
-          echo "config=$CONFIG" >> $GITHUB_OUTPUT
-          echo "✅ Rules configuration loaded"
+     #    CONFIG=$(cat .github/rules-config.json)
+       #   echo "config=$CONFIG" >> $GITHUB_OUTPUT
+       #   echo "✅ Rules configuration loaded"
 
       - name: Detect Changed Files
         id: files
