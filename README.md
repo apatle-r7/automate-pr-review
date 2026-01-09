@@ -1,5 +1,4 @@
 # Smart PR Automation System
-
 An automated GitHub Actions workflow that runs build, security, and code quality checks on Pull Requests, with intelligent handling based on PR author type.
 
 ## Architecture
