@@ -5,11 +5,10 @@ on:
     types: [opened, synchronize, reopened]
     branches:
       - main
-      - master
 
 jobs:
   build:
-    name: Build & Test
+    name: build
     runs-on: ubuntu-latest
 
     steps:
