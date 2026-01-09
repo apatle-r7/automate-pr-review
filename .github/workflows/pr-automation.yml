@@ -80,9 +80,11 @@ jobs:
           OTHER_FILES=0
           TOTAL_LINES_ADDED=0
           TOTAL_LINES_DELETED=0
+          TOTAL_FILES=0
           
           # Count file types
           for file in $ALL_CHANGED_FILES; do
+            TOTAL_FILES=$((TOTAL_FILES + 1))
             case "$file" in
               *src/main/java/*.java)
                 JAVA_SOURCE=$((JAVA_SOURCE + 1))
@@ -125,10 +127,14 @@ jobs:
           # IMPACT CLASSIFICATION LOGIC
           # ═══════════════════════════════════════════════════════════
           #
+          # POM-ONLY (Auto-merge):
+          #   - Only pom.xml files changed, nothing else
+          #
           # CRITICAL (Never auto-merge):
           #   - More than 10 Java source files changed
           #   - More than 500 lines changed
           #   - Security/auth files modified
+          #   - POM + other files changed together
           #
           # MAJOR (Never auto-merge):
           #   - 5-10 Java source files changed
@@ -145,6 +151,13 @@ jobs:
           #   - Renovate POM-only changes
           # ═══════════════════════════════════════════════════════════
           
+          # Check if only POM files changed
+          POM_ONLY=false
+          if [[ $POM_FILES -gt 0 ]] && [[ $POM_FILES -eq $TOTAL_FILES ]]; then
+            POM_ONLY=true
+            echo "✅ POM-only change detected!"
+          fi
+          
           # Check for critical files
           CRITICAL_FILES=false
           for file in $ALL_CHANGED_FILES; do
@@ -159,7 +172,19 @@ jobs:
           done
           
           # Determine impact level
-          if [[ "$CRITICAL_FILES" == "true" ]] || [[ $JAVA_SOURCE -gt 10 ]] || [[ $TOTAL_LINES -gt 500 ]]; then
+          if [[ "$POM_ONLY" == "true" ]]; then
+            # ✅ ONLY pom.xml changed - safe to auto-merge
+            IMPACT="POM_ONLY"
+            AUTO_MERGE="true"
+            EMOJI="📦"
+            echo "✅ POM-only change - eligible for auto-merge"
+          elif [[ $POM_FILES -gt 0 ]] && [[ $TOTAL_FILES -gt $POM_FILES ]]; then
+            # ❌ pom.xml + other files changed - requires review
+            IMPACT="MAJOR"
+            AUTO_MERGE="false"
+            EMOJI="🟠"
+            echo "⚠️ POM + other files changed - requires manual review"
+          elif [[ "$CRITICAL_FILES" == "true" ]] || [[ $JAVA_SOURCE -gt 10 ]] || [[ $TOTAL_LINES -gt 500 ]]; then
             IMPACT="CRITICAL"
             AUTO_MERGE="false"
             EMOJI="🔴"
@@ -179,12 +204,11 @@ jobs:
           
           # Special handling for Renovate bot
           if [[ "$PR_AUTHOR" == "renovate[bot]" ]]; then
-            TOTAL_FILES=$((JAVA_SOURCE + JAVA_TEST + POM_FILES + CONFIG_FILES + DOC_FILES + OTHER_FILES))
-            if [[ $POM_FILES -eq $TOTAL_FILES ]] && [[ $POM_FILES -gt 0 ]]; then
+            if [[ "$POM_ONLY" == "true" ]]; then
               echo "✅ Renovate PR with POM-only changes"
-              IMPACT="TRIVIAL"
+              IMPACT="POM_ONLY"
               AUTO_MERGE="true"
-              EMOJI="🟢"
+              EMOJI="📦"
             else
               echo "⚠️ Renovate PR with non-POM changes"
               IMPACT="MAJOR"
@@ -194,7 +218,7 @@ jobs:
           fi
           
           # Create summary
-          SUMMARY="Java:$JAVA_SOURCE Test:$JAVA_TEST POM:$POM_FILES Config:$CONFIG_FILES Docs:$DOC_FILES Lines:$TOTAL_LINES"
+          SUMMARY="Java:$JAVA_SOURCE Test:$JAVA_TEST POM:$POM_FILES Config:$CONFIG_FILES Docs:$DOC_FILES Lines:$TOTAL_LINES POM-Only:$POM_ONLY"
           
           # Set outputs
           echo "impact_level=$IMPACT" >> $GITHUB_OUTPUT
@@ -231,7 +255,8 @@ jobs:
               'CRITICAL': { emoji: '🔴', title: 'Critical Impact', color: 'red' },
               'MAJOR': { emoji: '🟠', title: 'Major Impact', color: 'orange' },
               'MINOR': { emoji: '🟡', title: 'Minor Impact', color: 'yellow' },
-              'TRIVIAL': { emoji: '🟢', title: 'Trivial Impact', color: 'green' }
+              'TRIVIAL': { emoji: '🟢', title: 'Trivial Impact', color: 'green' },
+              'POM_ONLY': { emoji: '📦', title: 'POM Only (Dependency Update)', color: 'green' }
             };
             
             const config = impactConfig[impact] || impactConfig['MINOR'];
@@ -249,6 +274,9 @@ jobs:
                 break;
               case 'TRIVIAL':
                 recommendation = '✅ **Trivial changes.** Safe for auto-merge after build passes.';
+                break;
+              case 'POM_ONLY':
+                recommendation = '📦 **Dependency update only.** Only pom.xml changed - safe for auto-merge.';
                 break;
             }
             
@@ -278,9 +306,10 @@ jobs:
             
             | Level | Criteria | Action |
             |-------|----------|--------|
-            | 🟢 TRIVIAL | Docs, tests only, <50 lines | Auto-merge |
+            | 📦 POM_ONLY | Only pom.xml changed | Auto-merge ✅ |
+            | 🟢 TRIVIAL | Docs, tests only, <50 lines | Auto-merge ✅ |
             | 🟡 MINOR | 1-4 Java files, 50-200 lines | Review recommended |
-            | 🟠 MAJOR | 5-10 Java files, 200-500 lines | Review required |
+            | 🟠 MAJOR | 5-10 Java files, 200-500 lines, or POM + other files | Review required |
             | 🔴 CRITICAL | >10 files, >500 lines, security files | Senior review required |
             
             </details>
