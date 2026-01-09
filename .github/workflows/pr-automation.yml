@@ -324,41 +324,41 @@ jobs:
               body: body
             });
 
-  auto-merge:
-    name: Auto Merge (Trivial Changes)
-    runs-on: ubuntu-latest
-    needs: [build, analyze-impact]
-    if: |
-      needs.analyze-impact.outputs.auto_merge == 'true' && 
-      needs.build.result == 'success'
+  # auto-merge:
+  #   name: Auto Merge (Trivial Changes)
+  #   runs-on: ubuntu-latest
+  #   needs: [build, analyze-impact]
+  #   if: |
+  #     needs.analyze-impact.outputs.auto_merge == 'true' && 
+  #     needs.build.result == 'success'
 
-    steps:
-      - name: Approve PR
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.pulls.createReview({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-              event: 'APPROVE',
-              body: '✅ **Auto-approved:** Trivial changes detected. All checks passed.'
-            });
-            console.log('✅ PR approved');
+  #   steps:
+  #     - name: Approve PR
+  #       uses: actions/github-script@v7
+  #       with:
+  #         script: |
+  #           await github.rest.pulls.createReview({
+  #             owner: context.repo.owner,
+  #             repo: context.repo.repo,
+  #             pull_number: context.issue.number,
+  #             event: 'APPROVE',
+  #             body: '✅ **Auto-approved:** Trivial changes detected. All checks passed.'
+  #           });
+  #           console.log('✅ PR approved');
 
-      - name: Merge PR
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.pulls.merge({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-              merge_method: 'squash',
-              commit_title: `Auto-merge: ${context.payload.pull_request.title}`,
-              commit_message: 'Automatically merged - trivial changes with passing checks.'
-            });
-            console.log('🎉 PR merged');
+  #     - name: Merge PR
+  #       uses: actions/github-script@v7
+  #       with:
+  #         script: |
+  #           await github.rest.pulls.merge({
+  #             owner: context.repo.owner,
+  #             repo: context.repo.repo,
+  #             pull_number: context.issue.number,
+  #             merge_method: 'squash',
+  #             commit_title: `Auto-merge: ${context.payload.pull_request.title}`,
+  #             commit_message: 'Automatically merged - trivial changes with passing checks.'
+  #           });
+  #           console.log('🎉 PR merged');
 
   add-labels:
     name: Add Labels
