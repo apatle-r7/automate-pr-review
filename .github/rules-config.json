@@ -1,0 +1,46 @@
+{
+  "rules": {
+    "MAJOR_CHANGES": {
+      "priority": "critical",
+      "reviewers": ["senior-team", "@architect"],
+      "auto_merge": false,
+      "labels": ["needs-review-critical", "high-impact"],
+      "description": "5+ Java files changed - Requires critical review"
+    },
+    "MINOR_CHANGES": {
+      "priority": "high",
+      "reviewers": ["team-leads"],
+      "auto_merge": false,
+      "labels": ["needs-review"],
+      "description": "1-5 Java files changed - Team leads review needed"
+    },
+    "CONFIG_ONLY": {
+      "priority": "medium",
+      "reviewers": ["devops-team"],
+      "auto_merge": true,
+      "labels": ["auto-rule:config"],
+      "description": "Configuration files only - DevOps review"
+    },
+    "DOCS_AND_TESTS": {
+      "priority": "low",
+      "reviewers": [],
+      "auto_merge": true,
+      "labels": ["auto-rule:docs-tests"],
+      "description": "Documentation and tests only - No functionality review needed"
+    },
+    "DEFAULT": {
+      "priority": "medium",
+      "reviewers": ["team-leads"],
+      "auto_merge": false,
+      "labels": ["auto-rule:default"],
+      "description": "Standard review process applies"
+    }
+  },
+  "thresholds": {
+    "java_files_major": 5,
+    "java_files_minor": 1,
+    "config_files_threshold": 1
+  },
+  "auto_merge_enabled": true,
+  "enforcement": "strict"
+}
