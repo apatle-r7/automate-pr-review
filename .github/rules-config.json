@@ -1,8 +1,13 @@
 {
+  "thresholds": {
+    "java_files_major": 10,
+    "java_files_minor": 1,
+    "config_files_threshold": 1
+  },
   "rules": {
     "MAJOR_CHANGES": {
       "priority": "critical",
-      "reviewers": ["senior-team", "@architect"],
+      "reviewers": ["senior-team", "architect"],
       "auto_merge": false,
       "labels": ["needs-review-critical", "high-impact"],
       "description": "5+ Java files changed - Requires critical review"
@@ -35,12 +40,5 @@
       "labels": ["auto-rule:default"],
       "description": "Standard review process applies"
     }
-  },
-  "thresholds": {
-    "java_files_major": 5,
-    "java_files_minor": 1,
-    "config_files_threshold": 1
-  },
-  "auto_merge_enabled": true,
-  "enforcement": "strict"
+  }
 }
