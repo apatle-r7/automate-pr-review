@@ -1,0 +1,74 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "timezone": "UTC",
+  "schedule": [
+    "before 3am on Monday"
+  ],
+  "maven": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "description": "Automatically merge minor and patch updates",
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Major updates require review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "impact-major"]
+    },
+    {
+      "description": "Java/JDK updates - major only, require review",
+      "matchPackagePatterns": ["^java$", "org.apache.maven"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "impact-critical"]
+    },
+    {
+      "description": "Spring Boot and Spring Framework - careful updates",
+      "matchPackagePatterns": ["^org.springframework"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "impact-major"]
+    },
+    {
+      "description": "Test dependencies - can automerge patch/minor",
+      "matchPackagePatterns": ["junit", "^org.mockito"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Maven plugins - require review for major",
+      "matchPackagePatterns": ["^org.apache.maven.plugins"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "impact-major"]
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": ["security", "impact-critical"],
+    "automerge": false,
+    "assignees": ["@owner"]
+  },
+  "prCreation": "not-pending",
+  "semanticCommits": "enabled",
+  "commitMessagePrefix": "chore(deps):",
+  "prConcurrentLimit": 3,
+  "prConcurrentLimitType": "global",
+  "rangeStrategy": "auto",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 3am on Monday"]
+  }
+}
