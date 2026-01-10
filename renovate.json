@@ -61,6 +61,7 @@
     "automerge": false,
     "assignees": ["@owner"]
   },
+  
   "prCreation": "not-pending",
   "semanticCommits": "enabled",
   "commitMessagePrefix": "chore(deps):",
