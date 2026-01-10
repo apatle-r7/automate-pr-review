@@ -408,14 +408,22 @@ jobs:
           script: |
             const impact = '${{ needs.analyze-impact.outputs.impact_level }}';
             
+            // Map all impact levels to labels
             const labelMap = {
               'CRITICAL': 'impact-critical',
               'MAJOR': 'impact-major',
               'MINOR': 'impact-minor',
-              'TRIVIAL': 'impact-trivial'
+              'TRIVIAL': 'impact-trivial',
+              'POM_ONLY': 'impact-trivial'  // POM-only updates are low-risk
             };
             
-            const label = labelMap[impact] || 'needs-review';
+            // Get label or fail safely with a default
+            const label = labelMap[impact];
+            
+            if (!label) {
+              console.log(`⚠️ Unknown impact level: ${impact}, skipping label assignment`);
+              return;
+            }
             
             try {
               await github.rest.issues.addLabels({
@@ -424,8 +432,11 @@ jobs:
                 issue_number: context.issue.number,
                 labels: [label]
               });
-              console.log(`✅ Added label: ${label}`);
+              console.log(`✅ Added label: ${label} (impact: ${impact})`);
             } catch (error) {
-              console.log('Label may not exist, creating...');
-              // Label doesn't exist - that's okay
+              if (error.status === 404) {
+                console.log(`⚠️ Label '${label}' does not exist. Ensure labels are created.`);
+              } else {
+                console.log(`⚠️ Failed to add label: ${error.message}`);
+              }
             }
