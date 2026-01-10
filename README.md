@@ -16,7 +16,7 @@ This system automatically processes PRs differently based on who created them
 
 ## Features
 
-### 🤖 Renovate Bot PRs
+### 🤖 Renovate Bot PRss
 
 When Renovate opens a PR for dependency updates
 
