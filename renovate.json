@@ -69,6 +69,14 @@
   "rangeStrategy": "auto",
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 3am on Monday"]
+    "schedule": ["at any time"]
+
   }
 }
+
+
+
+
+
+
+
