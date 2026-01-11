@@ -59,7 +59,7 @@
     "automerge": false,
     "assignees": ["@owner"]
   },
-  "prCreation": "not-pending",
+  "prCreation": "immediate",
   "semanticCommits": "enabled",
   "commitMessagePrefix": "chore(deps):",
   "prConcurrentLimit": 10,
