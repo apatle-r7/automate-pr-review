@@ -62,7 +62,9 @@
   "prCreation": "not-pending",
   "semanticCommits": "enabled",
   "commitMessagePrefix": "chore(deps):",
-  "prConcurrentLimit": 3,
+  "prConcurrentLimit": 10,
+  "branchConcurrentLimit": 10,
+  "prHourlyLimit": 10,
   "rangeStrategy": "auto",
   "lockFileMaintenance": {
     "enabled": true,
