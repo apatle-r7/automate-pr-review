@@ -1,0 +1,264 @@
+name: Auto-Merge PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  analyze-and-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+
+      - name: Analyze PR Impact
+        id: analyze
+        env:
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          echo "Changed files: $CHANGED_FILES"
+          echo "PR Author: $PR_AUTHOR"
+          
+          # Initialize flags
+          HAS_POM=false
+          HAS_README=false
+          HAS_JAVA=false
+          HAS_OTHER=false
+          IS_RENOVATE=false
+          
+          # Check if PR is from Renovate bot
+          if [[ "$PR_AUTHOR" == "renovate"* ]] || [[ "$PR_AUTHOR" == "renovate[bot]" ]]; then
+            IS_RENOVATE=true
+          fi
+          
+          # Analyze each changed file
+          for file in $CHANGED_FILES; do
+            echo "Analyzing: $file"
+            
+            if [[ "$file" == "pom.xml" ]]; then
+              HAS_POM=true
+            elif [[ "$file" == "README.md" ]] || [[ "$file" == *.md ]]; then
+              HAS_README=true
+            elif [[ "$file" == *.java ]]; then
+              HAS_JAVA=true
+            else
+              HAS_OTHER=true
+            fi
+          done
+          
+          echo "HAS_POM=$HAS_POM"
+          echo "HAS_README=$HAS_README"
+          echo "HAS_JAVA=$HAS_JAVA"
+          echo "HAS_OTHER=$HAS_OTHER"
+          echo "IS_RENOVATE=$IS_RENOVATE"
+          
+          # Determine impact and auto-merge eligibility based on scenarios:
+          # 1. Only pom.xml changed → POM_ONLY → Auto-Merge: Yes
+          # 2. pom.xml + README.md → MAJOR → Auto-Merge: No
+          # 3. pom.xml + App.java → MAJOR → Auto-Merge: No
+          # 4. Only README.md → TRIVIAL → Auto-Merge: Yes
+          # 5. Renovate: only pom.xml → POM_ONLY → Auto-Merge: Yes
+          # 6. Renovate: pom.xml + other → MAJOR → Auto-Merge: No
+          
+          IMPACT=""
+          AUTO_MERGE=false
+          
+          # Scenario 1 & 5: Only pom.xml changed (including Renovate)
+          if [[ "$HAS_POM" == "true" ]] && [[ "$HAS_README" == "false" ]] && [[ "$HAS_JAVA" == "false" ]] && [[ "$HAS_OTHER" == "false" ]]; then
+            IMPACT="POM_ONLY"
+            AUTO_MERGE=true
+            echo "📦 Scenario: Only pom.xml changed"
+          
+          # Scenario 4: Only README.md (or markdown files) changed
+          elif [[ "$HAS_POM" == "false" ]] && [[ "$HAS_README" == "true" ]] && [[ "$HAS_JAVA" == "false" ]] && [[ "$HAS_OTHER" == "false" ]]; then
+            IMPACT="TRIVIAL"
+            AUTO_MERGE=true
+            echo "🟢 Scenario: Only README.md changed"
+          
+          # Scenario 2: pom.xml + README.md
+          elif [[ "$HAS_POM" == "true" ]] && [[ "$HAS_README" == "true" ]] && [[ "$HAS_JAVA" == "false" ]] && [[ "$HAS_OTHER" == "false" ]]; then
+            IMPACT="MAJOR"
+            AUTO_MERGE=false
+            echo "🟠 Scenario: pom.xml + README.md changed"
+          
+          # Scenario 3: pom.xml + Java files
+          elif [[ "$HAS_POM" == "true" ]] && [[ "$HAS_JAVA" == "true" ]]; then
+            IMPACT="MAJOR"
+            AUTO_MERGE=false
+            echo "🟠 Scenario: pom.xml + Java files changed"
+          
+          # Scenario 6: Renovate with pom.xml + other files
+          elif [[ "$IS_RENOVATE" == "true" ]] && [[ "$HAS_POM" == "true" ]] && ([[ "$HAS_README" == "true" ]] || [[ "$HAS_JAVA" == "true" ]] || [[ "$HAS_OTHER" == "true" ]]); then
+            IMPACT="MAJOR"
+            AUTO_MERGE=false
+            echo "🟠 Scenario: Renovate PR with pom.xml + other files"
+          
+          # Any other combination with Java files
+          elif [[ "$HAS_JAVA" == "true" ]]; then
+            IMPACT="MAJOR"
+            AUTO_MERGE=false
+            echo "🟠 Scenario: Java files changed"
+          
+          # Default case
+          else
+            IMPACT="MAJOR"
+            AUTO_MERGE=false
+            echo "🟠 Scenario: Other files changed"
+          fi
+          
+          echo "impact=$IMPACT" >> $GITHUB_OUTPUT
+          echo "auto_merge=$AUTO_MERGE" >> $GITHUB_OUTPUT
+          echo "is_renovate=$IS_RENOVATE" >> $GITHUB_OUTPUT
+          
+          echo ""
+          echo "================================"
+          echo "📊 Analysis Result"
+          echo "================================"
+          echo "Impact: $IMPACT"
+          echo "Auto-Merge Eligible: $AUTO_MERGE"
+          echo "Is Renovate: $IS_RENOVATE"
+          echo "================================"
+
+      - name: Add PR Labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const impact = '${{ steps.analyze.outputs.impact }}';
+            const autoMerge = '${{ steps.analyze.outputs.auto_merge }}';
+            
+            // Define label colors
+            const labels = [];
+            
+            if (impact === 'POM_ONLY') {
+              labels.push('📦 pom-only');
+            } else if (impact === 'TRIVIAL') {
+              labels.push('🟢 trivial');
+            } else if (impact === 'MAJOR') {
+              labels.push('🟠 major');
+            }
+            
+            if (autoMerge === 'true') {
+              labels.push('✅ auto-merge');
+            } else {
+              labels.push('❌ manual-review');
+            }
+            
+            // Add labels to PR
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: labels
+            });
+            
+            console.log(`Added labels: ${labels.join(', ')}`);
+
+      - name: Post Analysis Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const impact = '${{ steps.analyze.outputs.impact }}';
+            const autoMerge = '${{ steps.analyze.outputs.auto_merge }}';
+            const isRenovate = '${{ steps.analyze.outputs.is_renovate }}';
+            const changedFiles = `${{ steps.changed-files.outputs.all_changed_files }}`.split(' ');
+            
+            let impactEmoji = '🟠';
+            if (impact === 'POM_ONLY') impactEmoji = '📦';
+            if (impact === 'TRIVIAL') impactEmoji = '🟢';
+            
+            const autoMergeStatus = autoMerge === 'true' ? '✅ Yes' : '❌ No';
+            
+            const comment = `## 🤖 PR Review Analysis
+            
+            | Property | Value |
+            |----------|-------|
+            | **Impact** | ${impactEmoji} ${impact} |
+            | **Auto-Merge Eligible** | ${autoMergeStatus} |
+            | **Renovate PR** | ${isRenovate === 'true' ? 'Yes' : 'No'} |
+            | **Files Changed** | ${changedFiles.length} |
+            
+            ### 📁 Changed Files
+            ${changedFiles.map(f => `- \`${f}\``).join('\n')}
+            
+            ---
+            ${autoMerge === 'true' 
+              ? '✅ **This PR is eligible for auto-merge** and will be merged automatically after checks pass.' 
+              : '⚠️ **This PR requires manual review** before merging.'}
+            `;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+
+      - name: Enable Auto-Merge
+        if: steps.analyze.outputs.auto_merge == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.issue.number;
+            
+            console.log(`Enabling auto-merge for PR #${prNumber}`);
+            
+            // Get PR details
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            // Enable auto-merge using GraphQL
+            try {
+              await github.graphql(`
+                mutation($pullRequestId: ID!) {
+                  enablePullRequestAutoMerge(input: {
+                    pullRequestId: $pullRequestId,
+                    mergeMethod: SQUASH
+                  }) {
+                    pullRequest {
+                      autoMergeRequest {
+                        enabledAt
+                      }
+                    }
+                  }
+                }
+              `, {
+                pullRequestId: pr.node_id
+              });
+              
+              console.log('✅ Auto-merge enabled successfully');
+            } catch (error) {
+              console.log('⚠️ Could not enable auto-merge:', error.message);
+              console.log('Note: Auto-merge requires branch protection rules to be configured.');
+              
+              // Fallback: Add an approval comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: '🤖 **Auto-merge requested** - This PR meets the criteria for automatic merging. A maintainer can merge this PR when ready.'
+              });
+            }
+
+      - name: Summary
+        run: |
+          echo "## PR Analysis Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Impact | ${{ steps.analyze.outputs.impact }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Auto-Merge | ${{ steps.analyze.outputs.auto_merge }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Renovate PR | ${{ steps.analyze.outputs.is_renovate }} |" >> $GITHUB_STEP_SUMMARY
