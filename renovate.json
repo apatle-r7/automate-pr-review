@@ -6,9 +6,7 @@
     ":semanticCommits"
   ],
   "timezone": "UTC",
-  "schedule": [
-    "before 3am on Monday"
-  ],
+  "schedule": ["at any time"],
   "maven": {
     "enabled": true
   },
