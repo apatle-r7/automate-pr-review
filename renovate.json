@@ -65,7 +65,6 @@
   "semanticCommits": "enabled",
   "commitMessagePrefix": "chore(deps):",
   "prConcurrentLimit": 3,
-  "prConcurrentLimitType": "global",
   "rangeStrategy": "auto",
   "lockFileMaintenance": {
     "enabled": true,
@@ -73,10 +72,5 @@
 
   }
 }
-
-
-
-
-
 
 
