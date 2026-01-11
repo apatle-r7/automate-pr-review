@@ -2,6 +2,8 @@
 # automate-pr-review
 # automate-pr-review
 
+## Test: pom + README (MAJOR impact)
+
 # pr-2 change
 # pr-review
 # Dependencies added Spring web, JUnit, gSon,apache,postgresql,lombok,springboot test
