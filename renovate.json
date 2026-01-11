@@ -12,33 +12,59 @@
   "maven": {
     "enabled": true
   },
+  "labels": ["dependencies"],
+  "prBodyColumns": ["Package", "Type", "Update", "Change", "Age", "Confidence"],
+  "prBodyNotes": [
+    "### 📋 PR Impact Analysis",
+    "This PR was automatically created by **Renovate Bot** to keep dependencies up to date.",
+    "",
+    "| Criteria | Status |",
+    "|----------|--------|",
+    "| Update Type | `{{updateType}}` |",
+    "| Automerge | {{#if automerge}}✅ Enabled{{else}}❌ Requires Review{{/if}} |",
+    "",
+    "---",
+    "#### 🔍 Review Guidelines",
+    "- **Patch updates**: Usually safe, bug fixes only",
+    "- **Minor updates**: New features, backward compatible",
+    "- **Major updates**: Breaking changes possible, review carefully"
+  ],
   "packageRules": [
     {
-      "description": "Automatically merge minor and patch updates",
-      "matchUpdateTypes": ["minor", "patch"],
+      "description": "Patch updates - auto-merge with label",
+      "matchUpdateTypes": ["patch"],
       "automerge": true,
       "automergeType": "pr",
-      "automergeStrategy": "squash"
+      "automergeStrategy": "squash",
+      "labels": ["dependencies", "impact-patch", "auto-merge"]
+    },
+    {
+      "description": "Minor updates - auto-merge with label",
+      "matchUpdateTypes": ["minor"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash",
+      "labels": ["dependencies", "impact-minor", "auto-merge"]
     },
     {
       "description": "Major updates require review",
       "matchUpdateTypes": ["major"],
       "automerge": false,
-      "labels": ["dependencies", "impact-major"]
+      "labels": ["dependencies", "impact-major", "manual-review"]
     },
     {
       "description": "Java/JDK updates - major only, require review",
       "matchPackagePatterns": ["^java$", "org.apache.maven"],
       "matchUpdateTypes": ["major"],
       "automerge": false,
-      "labels": ["dependencies", "impact-critical"]
+      "labels": ["dependencies", "impact-critical", "manual-review"]
     },
     {
       "description": "Spring Boot and Spring Framework - careful updates",
       "matchPackagePatterns": ["^org.springframework"],
       "matchUpdateTypes": ["major"],
       "automerge": false,
-      "labels": ["dependencies", "impact-major"]
+      "labels": ["dependencies", "impact-major", "manual-review", "spring"]
     },
     {
       "description": "Test dependencies - can automerge patch/minor",
@@ -46,18 +72,33 @@
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "automergeType": "pr",
-      "automergeStrategy": "squash"
+      "automergeStrategy": "squash",
+      "labels": ["dependencies", "test", "auto-merge"]
     },
     {
       "description": "Maven plugins - require review for major",
       "matchPackagePatterns": ["^org.apache.maven.plugins"],
       "matchUpdateTypes": ["major"],
       "automerge": false,
-      "labels": ["dependencies", "impact-major"]
+      "labels": ["dependencies", "impact-major", "manual-review"]
+    },
+    {
+      "description": "GitHub Actions - auto-merge minor/patch",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "labels": ["dependencies", "github-actions", "auto-merge"]
+    },
+    {
+      "description": "GitHub Actions - major requires review",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "github-actions", "impact-major", "manual-review"]
     }
   ],
   "vulnerabilityAlerts": {
-    "labels": ["security", "impact-critical"],
+    "labels": ["security", "impact-critical", "urgent"],
     "automerge": false,
     "assignees": ["@owner"]
   },
@@ -71,8 +112,5 @@
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["at any time"]
-
   }
 }
-
-
